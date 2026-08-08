@@ -19,13 +19,21 @@ _FONTNAME = "japan"
 _FONTSIZE_RATIO = 0.9
 
 
-def build_page(doc: pymupdf.Document, image: Image.Image, items: list[TextItem]) -> pymupdf.Page:
+def build_page(
+    doc: pymupdf.Document,
+    image: Image.Image,
+    items: list[TextItem],
+    page_rect: pymupdf.Rect,
+) -> pymupdf.Page:
     """画像を敷き、TextItem を透明テキストとして重ねた新規ページを doc に追加する。
 
-    ページサイズは画像のピクセルサイズをそのまま pt として使う(= 72dpi 換算)。
-    呼び出し側(pipeline.py)は TextItem の bbox をこの座標系に揃えて渡すこと。
+    ページサイズは page_rect(元 PDF ページの pt 単位サイズ)に合わせる。画像は
+    高解像度(dpi 依存のピクセルサイズ)のまま渡してよく、insert_image がページ
+    全体に縮小して敷く。TextItem の bbox も pt 単位(元ページ座標系)である前提。
+    画像のピクセルサイズをそのまま pt として使うと、高 dpi でラスタライズした場合に
+    実物より遥かに大きいページになってしまうため、これらを混同しないこと。
     """
-    page = doc.new_page(width=image.width, height=image.height)
+    page = doc.new_page(width=page_rect.width, height=page_rect.height)
 
     buf = io.BytesIO()
     image.save(buf, format="PNG")
