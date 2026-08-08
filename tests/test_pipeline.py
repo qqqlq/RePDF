@@ -2,7 +2,7 @@ import pymupdf
 import pytest
 from PIL import Image
 
-from repdf.pipeline import apply_boxes, pages_to_keep, rasterize_page
+from repdf.pipeline import apply_boxes, pages_to_keep, rasterize_page, sanitize
 
 
 @pytest.fixture
@@ -62,3 +62,75 @@ def test_pages_to_keep_with_no_removals_keeps_all():
 
 def test_pages_to_keep_with_all_removed_returns_empty():
     assert pages_to_keep(page_count=3, remove_pages={0, 1, 2}) == []
+
+
+class TestSanitize:
+    @pytest.fixture
+    def input_pdf(self, tmp_path):
+        doc = pymupdf.open()
+        p1 = doc.new_page()
+        p1.insert_text((72, 72), "Page1 Visible", fontsize=14, render_mode=0)
+        p1.insert_text((72, 100), "Page1 SecretHidden", fontsize=14, render_mode=3)
+        doc.new_page().insert_text((72, 72), "Page2 ToBeDeleted", fontsize=14, render_mode=0)
+        doc.new_page().insert_text((72, 72), "Page3 Visible", fontsize=14, render_mode=0)
+        doc.set_metadata({"title": "Secret Title", "author": "Secret Author"})
+        path = tmp_path / "input.pdf"
+        doc.save(path)
+        doc.close()
+        return path
+
+    def test_removes_specified_pages(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        sanitize(input_pdf, output, remove_pages={1}, dpi=100)
+        out_doc = pymupdf.open(output)
+        try:
+            assert len(out_doc) == 2
+            assert "Page1 Visible" in out_doc[0].get_text()
+            assert "Page3 Visible" in out_doc[1].get_text()
+            assert "ToBeDeleted" not in out_doc[0].get_text() + out_doc[1].get_text()
+        finally:
+            out_doc.close()
+
+    def test_hidden_text_does_not_survive(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        sanitize(input_pdf, output, dpi=100)
+        out_doc = pymupdf.open(output)
+        try:
+            all_text = "".join(page.get_text() for page in out_doc)
+            assert "SecretHidden" not in all_text
+        finally:
+            out_doc.close()
+
+    def test_metadata_is_cleared(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        sanitize(input_pdf, output, dpi=100)
+        out_doc = pymupdf.open(output)
+        try:
+            assert out_doc.metadata["title"] == ""
+            assert out_doc.metadata["author"] == ""
+        finally:
+            out_doc.close()
+
+    def test_text_layer_none_produces_no_text(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        sanitize(input_pdf, output, dpi=100, text_layer="none")
+        out_doc = pymupdf.open(output)
+        try:
+            assert all(page.get_text().strip() == "" for page in out_doc)
+        finally:
+            out_doc.close()
+
+    def test_boxes_remove_text_in_region(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        # ページ0(0-indexed)の上半分を黒塗り("Page1 Visible"はページ上部にある)
+        sanitize(input_pdf, output, dpi=100, boxes={0: [(0.0, 0.0, 1.0, 0.3)]})
+        out_doc = pymupdf.open(output)
+        try:
+            assert "Page1 Visible" not in out_doc[0].get_text()
+        finally:
+            out_doc.close()
+
+    def test_invalid_text_layer_raises(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        with pytest.raises(ValueError):
+            sanitize(input_pdf, output, dpi=100, text_layer="bogus")
