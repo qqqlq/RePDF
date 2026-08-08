@@ -18,9 +18,11 @@ RePDF は全ページをラスタライズ（画像化）してから PDF を再
 開発中。進め方の詳細は `docs/` を参照。
 
 - [x] Phase 0: プロジェクト雛形
-- [ ] Phase 1: コアパイプライン・CLI
+- [x] Phase 1: コアパイプライン・CLI
 - [ ] Phase 2: Web UI
 - [ ] Phase 3: 低信頼度レビュー・Claude 補正・Markdown 出力
+
+詳細は `docs/phase1.md` を参照。
 
 ## セットアップ
 
@@ -31,6 +33,28 @@ source .venv/bin/activate
 
 OCR 方式のテキストレイヤーを使う場合は `tesseract-ocr` (と日本語なら `tesseract-ocr-jpn`) が
 別途必要。`setup.sh` が未導入を検出した場合は案内を表示する。
+
+## 使い方 (CLI)
+
+```sh
+python -m repdf.cli input.pdf -o output.pdf \
+    --remove 3,5-7 \
+    --dpi 200 \
+    --text-layer extract \
+    --boxes boxes.json \
+    --fill black \
+    --markdown output.md
+```
+
+| オプション | 説明 |
+|---|---|
+| `--remove` | 削除するページ(1-indexed)。例: `3,5-7` |
+| `--dpi` | ラスタライズ解像度(既定: 200) |
+| `--text-layer` | `extract`(元PDFの可視テキストを再利用)・`ocr`(tesseractで読み直す)・`none`(画像のみ) |
+| `--boxes` | 黒塗り/白塗りする矩形を指定する JSON ファイル(1-indexedページ→正規化座標0.0-1.0の矩形配列) |
+| `--fill` | `black` / `white`(既定: black) |
+| `--ocr-lang` | `--text-layer ocr` のときの tesseract 言語指定(既定: eng。日本語は `jpn+eng`) |
+| `--markdown` | 指定するとサニタイズ後のテキストを Markdown としても書き出す |
 
 ## 既知の制約
 
@@ -45,6 +69,11 @@ LAN 上の他端末から使いたい場合も、信頼できるネットワー�
 した上で利用すること。
 
 ## チェンジログ
+
+### Phase 1
+- ラスタライズ・ページ削除・黒塗り/白塗り・可視テキスト抽出・OCR・透明テキスト
+  レイヤー・メタデータ除去・CLI・Markdown サイドカー出力を追加
+- 詳細と既知の問題は `docs/phase1.md` を参照
 
 ### Phase 0
 - プロジェクト雛形を追加（`.gitignore` / `LICENSE` / `requirements.txt` / `setup.sh`）
