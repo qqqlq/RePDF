@@ -1,12 +1,14 @@
 """PDF サニタイズの中核処理: ラスタライズ・ページ選択・矩形塗り・全体の統合。"""
 
 import os
+from pathlib import Path
 from typing import Literal
 
 import pymupdf
 from PIL import Image, ImageDraw
 
 from repdf.layer import build_page
+from repdf.markdown import pages_to_markdown
 from repdf.models import TextItem
 from repdf.providers import extract, ocr
 from repdf.visibility import DEFAULT_BACKGROUND_COLOR
@@ -101,6 +103,7 @@ def sanitize(
     fill: FillColor = "black",
     ocr_lang: str = "eng",
     background: tuple[float, float, float] = DEFAULT_BACKGROUND_COLOR,
+    markdown_path: str | os.PathLike[str] | None = None,
 ) -> None:
     """PDF を丸ごとラスタライズして再構成し、隠しテキスト・メタデータを除去する。
 
@@ -111,9 +114,12 @@ def sanitize(
                その下に隠れているテキストは出力に一切現れない)。
         text_layer: "extract"(元PDFの可視テキストを再利用) / "ocr"(tesseractで
                読み直す) / "none"(画像のみ、検索不可)。
+        markdown_path: 指定すると、各ページのテキストレイヤーを Markdown として
+               別ファイルに書き出す(text_layer="none" の場合は空になる)。
     """
     remove_pages = remove_pages or set()
     boxes = boxes or {}
+    pages_items: list[list[TextItem]] = []
 
     src_doc = pymupdf.open(str(input_path))
     try:
@@ -137,6 +143,7 @@ def sanitize(
                     raise ValueError(f"unknown text_layer: {text_layer!r}")
 
                 build_page(out_doc, image, items, page.rect)
+                pages_items.append(items)
 
             out_doc.set_metadata({})
             out_doc.del_xml_metadata()
@@ -145,3 +152,6 @@ def sanitize(
             out_doc.close()
     finally:
         src_doc.close()
+
+    if markdown_path is not None:
+        Path(markdown_path).write_text(pages_to_markdown(pages_items), encoding="utf-8")

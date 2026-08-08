@@ -134,3 +134,17 @@ class TestSanitize:
         output = tmp_path / "output.pdf"
         with pytest.raises(ValueError):
             sanitize(input_pdf, output, dpi=100, text_layer="bogus")
+
+    def test_markdown_sidecar_is_written(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        markdown_path = tmp_path / "output.md"
+        sanitize(input_pdf, output, remove_pages={1}, dpi=100, markdown_path=markdown_path)
+        content = markdown_path.read_text(encoding="utf-8")
+        assert "Page1 Visible" in content
+        assert "Page3 Visible" in content
+        assert "SecretHidden" not in content
+
+    def test_markdown_sidecar_not_written_when_path_omitted(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        sanitize(input_pdf, output, dpi=100)
+        assert not (tmp_path / "output.md").exists()
