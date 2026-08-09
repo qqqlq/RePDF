@@ -2,6 +2,7 @@
 
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
@@ -107,6 +108,7 @@ def sanitize(
     background: tuple[float, float, float] = DEFAULT_BACKGROUND_COLOR,
     markdown_path: str | os.PathLike[str] | None = None,
     audit_path: str | os.PathLike[str] | None = None,
+    progress_callback: Callable[[int, int], None] | None = None,
 ) -> None:
     """PDF を丸ごとラスタライズして再構成し、隠しテキスト・メタデータを除去する。
 
@@ -124,6 +126,8 @@ def sanitize(
                の可視判定はヒューリスティクスなので、未知の隠し方の見落としを OCR
                との突き合わせで補う)。自動除去はしない。text_layer="extract" のとき
                のみ意味を持ち、それ以外を指定するとエラーになる。tesseract が必要。
+        progress_callback: 指定すると、ページを1枚処理するたびに
+               `(処理済み件数, 総ページ数)` を渡して呼ぶ。Web UI の進捗表示用。
     """
     if audit_path is not None:
         if text_layer != "extract":
@@ -140,7 +144,9 @@ def sanitize(
     try:
         out_doc = pymupdf.open()
         try:
-            for src_index in pages_to_keep(len(src_doc), remove_pages):
+            keep = pages_to_keep(len(src_doc), remove_pages)
+            total = len(keep)
+            for done_count, src_index in enumerate(keep, start=1):
                 page = src_doc[src_index]
                 page_boxes = boxes.get(src_index, [])
                 image = rasterize_page(page, dpi)
@@ -170,6 +176,8 @@ def sanitize(
 
                 build_page(out_doc, image, items, page.rect)
                 pages_items.append(items)
+                if progress_callback is not None:
+                    progress_callback(done_count, total)
 
             out_doc.set_metadata({})
             out_doc.del_xml_metadata()
