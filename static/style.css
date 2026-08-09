@@ -1,47 +1,184 @@
+/* ===== トークン ===================================================== */
+
 :root {
   color-scheme: light dark;
-  --border: #888;
-  --accent: #2563eb;
-  --danger: #dc2626;
-  --bg-panel: rgba(128, 128, 128, 0.08);
+
+  /* 行政文書・謄写版印刷のインクを想起させるパレット */
+  --paper: #eae6dc;
+  --paper-raised: #f4f1e8;
+  --ink: #1c1a15;
+  --ink-soft: #55503f;
+  --redact: #100e0a;
+  --stamp-red: #a8362a;
+  --file-blue: #2d4a6e;
+  --manila: #c9a24b;
+  --border: #b8b09a;
+  --border-strong: #1c1a15;
+
+  --font-display: "Special Elite", "Courier New", monospace;
+  --font-body:
+    -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic",
+    "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  --radius: 3px;
+  --shadow-card: 0 1px 0 var(--border), 0 6px 14px -10px rgba(20, 16, 8, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #17181b;
+    --paper-raised: #1f2023;
+    --ink: #e8e3d5;
+    --ink-soft: #9b9585;
+    --redact: #000000;
+    --stamp-red: #d97463;
+    --file-blue: #86aed6;
+    --manila: #c9a24b;
+    --border: #3a3a38;
+    --border-strong: #e8e3d5;
+    --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.6), 0 10px 24px -14px rgba(0, 0, 0, 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
 }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  max-width: 960px;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  max-width: 900px;
   margin: 0 auto;
-  padding: 1.5rem;
-  line-height: 1.5;
+  padding: 2.5rem 1.5rem 4rem;
+  line-height: 1.6;
 }
+
+:focus-visible {
+  outline: 2px solid var(--file-blue);
+  outline-offset: 2px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ===== ヘッダー ====================================================== */
 
 header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
 }
 
-h1 {
-  margin-bottom: 0.25rem;
+.header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.logotype {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.case-stamp {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--stamp-red);
+  border: 1.5px solid var(--stamp-red);
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  transform: rotate(-2deg);
+  white-space: nowrap;
 }
 
 .subtitle {
-  color: gray;
-  margin-top: 0;
+  margin: 0.75rem 0 0;
+  color: var(--ink-soft);
+  font-size: 1.02rem;
+}
+
+/* signature: サブタイトルの一部を実際に黒塗りする */
+.redact-phrase {
+  position: relative;
+  display: inline-block;
+  cursor: default;
+}
+
+.redact-phrase-text {
+  visibility: hidden;
+}
+
+.redact-phrase::after {
+  content: "";
+  position: absolute;
+  inset: 0.05em 0;
+  background: var(--redact);
+  border-radius: 1px;
+}
+
+/* ===== レイアウト共通 ================================================ */
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--stamp-red);
+  margin: 0 0 0.6rem;
+  text-transform: uppercase;
 }
 
 .panel {
+  background: var(--paper-raised);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background: var(--bg-panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
 }
 
 .panel h2 {
   margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin: 0.25rem 0 1rem;
 }
 
 label {
   display: block;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.92rem;
 }
 
 label.checkbox {
@@ -57,125 +194,209 @@ label.checkbox input {
 input[type="text"],
 select {
   display: block;
-  margin-top: 0.25rem;
-  padding: 0.4rem;
+  margin-top: 0.3rem;
+  padding: 0.5rem 0.6rem;
   width: 100%;
   max-width: 320px;
   box-sizing: border-box;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
+
+input[type="text"]:focus,
+select:focus {
+  border-color: var(--file-blue);
+}
+
+/* ===== ボタン ========================================================= */
 
 button {
   cursor: pointer;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--accent);
-  color: white;
+  font: inherit;
+  font-family: var(--font-display);
   font-size: 1rem;
+  letter-spacing: 0.02em;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border-strong);
+  background: var(--ink);
+  color: var(--paper);
+  transition: transform 0.08s ease;
 }
 
 button:hover {
-  opacity: 0.9;
+  opacity: 0.92;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.secondary-button {
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+
+.stamp-button {
+  background: var(--stamp-red);
+  border-color: var(--stamp-red);
+  color: #fdf8ee;
 }
 
 .error {
-  color: var(--danger);
-  font-weight: bold;
+  color: var(--stamp-red);
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-/* --- アップロード --- */
+/* ===== アップロード ==================================================== */
 
 #drop-zone {
   border: 2px dashed var(--border);
-  border-radius: 8px;
-  padding: 3rem 1rem;
+  border-radius: var(--radius);
+  padding: 4rem 1rem;
   text-align: center;
   cursor: pointer;
+  background: var(--paper-raised);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 #drop-zone.dragover {
-  border-color: var(--accent);
-  background: var(--bg-panel);
+  border-color: var(--file-blue);
+  background: var(--paper);
 }
 
-/* --- サムネイル一覧 --- */
+.drop-zone-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.drop-zone-sub {
+  margin: 0.4rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+/* ===== サムネイル一覧 =================================================== */
 
 #thumbnails {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
 
 .thumb-card {
   position: relative;
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem;
   text-align: center;
-}
-
-.thumb-card.removed {
-  opacity: 0.4;
-  border-color: var(--danger);
+  background: var(--paper);
 }
 
 .thumb-card img {
   width: 100%;
   cursor: pointer;
   display: block;
+  border: 1px solid var(--border);
+}
+
+.thumb-card.removed {
+  border-color: var(--stamp-red);
+}
+
+.thumb-card.removed img {
+  opacity: 0.35;
+}
+
+.thumb-card.removed::after {
+  content: "除外";
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  color: var(--stamp-red);
+  border: 2px solid var(--stamp-red);
+  padding: 0.15rem 0.6rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
 }
 
 .thumb-label {
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 0.35rem;
 }
 
 .thumb-badge {
   position: absolute;
-  top: 0.3rem;
-  right: 0.3rem;
-  background: var(--accent);
-  color: white;
-  font-size: 0.7rem;
+  top: 0.35rem;
+  right: 0.35rem;
+  background: var(--file-blue);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
   padding: 0.1rem 0.4rem;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 .thumb-edit-button {
-  margin-top: 0.4rem;
-  font-size: 0.8rem;
-  padding: 0.3rem 0.6rem;
+  margin-top: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  color: var(--file-blue);
+  border: 1px solid var(--file-blue);
+  width: 100%;
 }
 
-/* --- 矩形エディタ --- */
+/* ===== 矩形エディタ ===================================================== */
 
 #box-editor-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(10, 8, 4, 0.68);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  padding: 1rem;
 }
 
 #box-editor-panel {
-  background: Canvas;
-  color: CanvasText;
-  border-radius: 8px;
-  padding: 1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   max-width: 95vw;
   max-height: 90vh;
+  box-shadow: var(--shadow-card);
 }
 
 #box-editor-image-container {
   position: relative;
-  max-width: 70vw;
+  max-width: 68vw;
   max-height: 80vh;
   overflow: auto;
+  border: 1px solid var(--border);
 }
 
 #box-editor-image {
@@ -191,12 +412,13 @@ button:hover {
 
 .drawn-box {
   position: absolute;
-  border: 2px solid var(--accent);
-  background: rgba(37, 99, 235, 0.3);
+  background: var(--redact);
+  border-radius: 1px;
 }
 
 .drawn-box.drawing {
-  border-style: dashed;
+  background: transparent;
+  border: 2px dashed var(--stamp-red);
 }
 
 #box-editor-sidebar {
@@ -205,9 +427,15 @@ button:hover {
   flex-direction: column;
 }
 
+#box-editor-sidebar h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
 #box-list {
   list-style: none;
   padding: 0;
+  margin: 0 0 1rem;
   flex: 1;
   overflow-y: auto;
 }
@@ -217,33 +445,86 @@ button:hover {
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
-  padding: 0.3rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  padding: 0.4rem 0;
   border-bottom: 1px solid var(--border);
 }
 
-.hint {
-  font-size: 0.85rem;
-  color: gray;
+#box-list button {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  color: var(--stamp-red);
+  border: 1px solid var(--stamp-red);
 }
 
-/* --- 進捗・結果 --- */
+/* ===== 進捗・結果 ======================================================= */
 
 progress {
   width: 100%;
-  height: 1.5rem;
+  height: 0.9rem;
+  accent-color: var(--stamp-red);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background: var(--paper);
+}
+
+progress::-webkit-progress-value {
+  background: var(--stamp-red);
+}
+
+#progress-text {
+  margin-top: 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
 }
 
 #result-links {
   list-style: none;
   padding: 0;
+  margin: 0 0 1.5rem;
 }
 
 #result-links li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
 }
 
 #result-links a {
-  color: var(--accent);
-  font-weight: bold;
+  display: inline-block;
+  color: var(--file-blue);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid var(--file-blue);
+}
+
+#result-links a:hover {
+  opacity: 0.8;
+}
+
+/* ===== レスポンシブ ===================================================== */
+
+@media (max-width: 640px) {
+  body {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  #box-editor-panel {
+    flex-direction: column;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+
+  #box-editor-image-container {
+    max-width: 100%;
+  }
+
+  #box-editor-sidebar {
+    width: 100%;
+  }
 }
