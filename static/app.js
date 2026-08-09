@@ -193,13 +193,18 @@ function renderBoxList() {
 
 function setupDrawLayer() {
   const layer = document.getElementById("box-editor-draw-layer");
+  // 座標は layer ではなく実際の画像(image)の表示矩形を基準に計算する。
+  // layer は position:absolute; inset:0 でコンテナに固定されるが、コンテナが
+  // スクロール可能な場合に画像の実サイズとズレることがあるため(実際にこれが
+  // 原因で黒塗り位置がずれるバグがあった)、常に image 基準にして矛盾をなくす。
+  const image = document.getElementById("box-editor-image");
   let startX = 0;
   let startY = 0;
   let tempEl = null;
 
   layer.addEventListener("mousedown", (e) => {
     if (state.currentEditingPage === null) return;
-    const rect = layer.getBoundingClientRect();
+    const rect = image.getBoundingClientRect();
     startX = clamp01((e.clientX - rect.left) / rect.width);
     startY = clamp01((e.clientY - rect.top) / rect.height);
     tempEl = document.createElement("div");
@@ -209,7 +214,7 @@ function setupDrawLayer() {
 
   layer.addEventListener("mousemove", (e) => {
     if (!tempEl) return;
-    const rect = layer.getBoundingClientRect();
+    const rect = image.getBoundingClientRect();
     const curX = clamp01((e.clientX - rect.left) / rect.width);
     const curY = clamp01((e.clientY - rect.top) / rect.height);
     const x0 = Math.min(startX, curX);

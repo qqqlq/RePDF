@@ -401,15 +401,19 @@ button:active {
 
 #box-editor-image-container {
   position: relative;
+  display: inline-block;
   max-width: 68vw;
   max-height: 80vh;
-  overflow: auto;
   border: 1px solid var(--border);
+  line-height: 0;
 }
 
 #box-editor-image {
   display: block;
-  max-width: 100%;
+  max-width: 68vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
 }
 
 #box-editor-draw-layer {
@@ -528,7 +532,8 @@ progress::-webkit-progress-value {
     overflow-y: auto;
   }
 
-  #box-editor-image-container {
+  #box-editor-image-container,
+  #box-editor-image {
     max-width: 100%;
   }
 
