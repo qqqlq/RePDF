@@ -43,7 +43,8 @@ python -m repdf.cli input.pdf -o output.pdf \
     --text-layer extract \
     --boxes boxes.json \
     --fill black \
-    --markdown output.md
+    --markdown output.md \
+    --audit audit.json
 ```
 
 | オプション | 説明 |
@@ -55,6 +56,7 @@ python -m repdf.cli input.pdf -o output.pdf \
 | `--fill` | `black` / `white`(既定: black) |
 | `--ocr-lang` | `--text-layer ocr` のときの tesseract 言語指定(既定: eng。日本語は `jpn+eng`) |
 | `--markdown` | 指定するとサニタイズ後のテキストを Markdown としても書き出す |
+| `--audit` | `--text-layer extract` 専用。採用したテキストのうち OCR で検出できないものを警告 JSON に書き出す(tesseract 必須。詳細は `docs/audit-feature.md`) |
 
 ## 既知の制約
 
@@ -69,6 +71,15 @@ LAN 上の他端末から使いたい場合も、信頼できるネットワー�
 した上で利用すること。
 
 ## チェンジログ
+
+### Phase 1 追加機能: extract/OCR差分による監査レポート
+- `--audit` オプションを追加。`--text-layer extract` が採用したテキストのうち、
+  同じ位置を OCR しても検出できないものを警告 JSON に書き出す
+- 可視判定(`visibility.py`)はヒューリスティクスであり、未知の隠し方(例: 白い図形で
+  テキストを覆い隠す)を見逃す可能性がある。OCR は実際に画像へ描画されたものしか
+  読めないため、この差分は「PDF上はテキストとして存在するが画像には描画されて
+  いない」ことの強いシグナルになる。自動除去はせず警告に留める
+- 詳細は `docs/audit-feature.md` を参照
 
 ### Phase 1
 - ラスタライズ・ページ削除・黒塗り/白塗り・可視テキスト抽出・OCR・透明テキスト

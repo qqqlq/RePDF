@@ -1,5 +1,6 @@
 """PDF サニタイズの中核処理: ラスタライズ・ページ選択・矩形塗り・全体の統合。"""
 
+import json
 import os
 from pathlib import Path
 from typing import Literal
@@ -7,10 +8,11 @@ from typing import Literal
 import pymupdf
 from PIL import Image, ImageDraw
 
+from repdf.audit import find_suspicious_items
 from repdf.layer import build_page
 from repdf.markdown import pages_to_markdown
 from repdf.models import TextItem
-from repdf.providers import extract, ocr
+from repdf.providers import extract, ocr, tesseract_available
 from repdf.visibility import DEFAULT_BACKGROUND_COLOR
 
 FillColor = Literal["black", "white"]
@@ -104,6 +106,7 @@ def sanitize(
     ocr_lang: str = "eng",
     background: tuple[float, float, float] = DEFAULT_BACKGROUND_COLOR,
     markdown_path: str | os.PathLike[str] | None = None,
+    audit_path: str | os.PathLike[str] | None = None,
 ) -> None:
     """PDF を丸ごとラスタライズして再構成し、隠しテキスト・メタデータを除去する。
 
@@ -116,10 +119,22 @@ def sanitize(
                読み直す) / "none"(画像のみ、検索不可)。
         markdown_path: 指定すると、各ページのテキストレイヤーを Markdown として
                別ファイルに書き出す(text_layer="none" の場合は空になる)。
+        audit_path: 指定すると、extract() が可視と判定したテキストのうち、同じ位置を
+               OCR しても検出できないものを警告として JSON に書き出す(visibility.py
+               の可視判定はヒューリスティクスなので、未知の隠し方の見落としを OCR
+               との突き合わせで補う)。自動除去はしない。text_layer="extract" のとき
+               のみ意味を持ち、それ以外を指定するとエラーになる。tesseract が必要。
     """
+    if audit_path is not None:
+        if text_layer != "extract":
+            raise ValueError('audit_path は text_layer="extract" のときのみ使用できます')
+        if not tesseract_available():
+            raise RuntimeError("audit_path を使うには tesseract-ocr が必要です")
+
     remove_pages = remove_pages or set()
     boxes = boxes or {}
     pages_items: list[list[TextItem]] = []
+    suspicious_report: list[dict] = []
 
     src_doc = pymupdf.open(str(input_path))
     try:
@@ -135,6 +150,17 @@ def sanitize(
                     items = extract(page, background=background)
                     boxes_pt = [_normalized_box_to_pt(b, page.rect) for b in page_boxes]
                     items = _drop_items_in_boxes(items, boxes_pt)
+                    if audit_path is not None:
+                        audit_ocr_items = ocr(image, lang=ocr_lang, dpi=dpi)
+                        for s in find_suspicious_items(items, audit_ocr_items):
+                            suspicious_report.append(
+                                {
+                                    "page": src_index + 1,
+                                    "text": s.text,
+                                    "bbox": list(s.bbox),
+                                    "reason": s.reason,
+                                }
+                            )
                 elif text_layer == "ocr":
                     items = ocr(image, lang=ocr_lang, dpi=dpi)
                 elif text_layer == "none":
@@ -155,3 +181,9 @@ def sanitize(
 
     if markdown_path is not None:
         Path(markdown_path).write_text(pages_to_markdown(pages_items), encoding="utf-8")
+
+    if audit_path is not None:
+        report = {"suspicious_items": suspicious_report}
+        Path(audit_path).write_text(
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )

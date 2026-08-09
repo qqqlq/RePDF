@@ -1,8 +1,11 @@
+import json
+
 import pymupdf
 import pytest
 from PIL import Image
 
 from repdf.pipeline import apply_boxes, pages_to_keep, rasterize_page, sanitize
+from repdf.providers import tesseract_available
 
 
 @pytest.fixture
@@ -148,3 +151,65 @@ class TestSanitize:
         output = tmp_path / "output.pdf"
         sanitize(input_pdf, output, dpi=100)
         assert not (tmp_path / "output.md").exists()
+
+    def test_audit_path_requires_extract_text_layer(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        with pytest.raises(ValueError):
+            sanitize(
+                input_pdf,
+                output,
+                dpi=100,
+                text_layer="ocr",
+                audit_path=tmp_path / "audit.json",
+            )
+
+
+@pytest.mark.skipif(not tesseract_available(), reason="tesseract がインストールされていない")
+class TestAuditReport:
+    """visibility.py では見逃されるが、実際には隠れているケースを audit が拾えるか。"""
+
+    @pytest.fixture
+    def pdf_with_shape_hidden_text(self, tmp_path):
+        doc = pymupdf.open()
+        page = doc.new_page()
+        page.insert_text((72, 72), "NormalVisibleText", fontsize=14, render_mode=0)
+        # render_mode=0・黒・通常サイズなので visibility.py の判定は通過してしまうが、
+        # 後から白い矩形を重ねて画像上は完全に隠れている(=OCRでは検出されない)。
+        page.insert_text((72, 150), "HiddenBehindShape", fontsize=14, render_mode=0)
+        page.draw_rect(pymupdf.Rect(70, 138, 300, 152), color=None, fill=(1, 1, 1))
+        path = tmp_path / "shape_hidden.pdf"
+        doc.save(path)
+        doc.close()
+        return path
+
+    def test_shape_hidden_text_is_flagged_suspicious(self, pdf_with_shape_hidden_text, tmp_path):
+        output = tmp_path / "output.pdf"
+        audit_path = tmp_path / "audit.json"
+        sanitize(
+            pdf_with_shape_hidden_text,
+            output,
+            dpi=200,
+            text_layer="extract",
+            audit_path=audit_path,
+        )
+        report = json.loads(audit_path.read_text(encoding="utf-8"))
+        flagged_texts = {item["text"] for item in report["suspicious_items"]}
+        assert "HiddenBehindShape" in flagged_texts
+        assert "NormalVisibleText" not in flagged_texts
+
+    def test_shape_hidden_text_still_ends_up_in_output(self, pdf_with_shape_hidden_text, tmp_path):
+        # audit は警告のみで自動除去はしない仕様の確認。
+        output = tmp_path / "output.pdf"
+        sanitize(
+            pdf_with_shape_hidden_text,
+            output,
+            dpi=200,
+            text_layer="extract",
+            audit_path=tmp_path / "audit.json",
+        )
+        out_doc = pymupdf.open(output)
+        try:
+            all_text = "".join(page.get_text() for page in out_doc)
+        finally:
+            out_doc.close()
+        assert "HiddenBehindShape" in all_text

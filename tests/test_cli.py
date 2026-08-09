@@ -4,6 +4,7 @@ import pymupdf
 import pytest
 
 from repdf.cli import load_boxes, main, parse_page_ranges
+from repdf.providers import tesseract_available
 
 
 class TestParsePageRanges:
@@ -95,3 +96,35 @@ class TestMain:
         output = tmp_path / "output.pdf"
         rc = main(["--remove", "0", str(input_pdf), "-o", str(output)])
         assert rc == 1
+
+    def test_audit_with_wrong_text_layer_returns_error_code(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        audit = tmp_path / "audit.json"
+        rc = main(
+            [
+                "--dpi",
+                "100",
+                "--text-layer",
+                "none",
+                "--audit",
+                str(audit),
+                str(input_pdf),
+                "-o",
+                str(output),
+            ]
+        )
+        assert rc == 1
+
+    @pytest.mark.skipif(not tesseract_available(), reason="tesseract がインストールされていない")
+    def test_audit_option_writes_report_and_prints_count(self, input_pdf, tmp_path, capsys):
+        output = tmp_path / "output.pdf"
+        audit = tmp_path / "audit.json"
+        rc = main(
+            ["--dpi", "150", "--audit", str(audit), str(input_pdf), "-o", str(output)]
+        )
+        assert rc == 0
+        assert audit.exists()
+        report = json.loads(audit.read_text(encoding="utf-8"))
+        assert "suspicious_items" in report
+        captured = capsys.readouterr()
+        assert "監査レポート" in captured.out

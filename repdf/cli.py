@@ -3,7 +3,7 @@
 使用例:
     python -m repdf.cli input.pdf -o output.pdf \\
         --remove 3,5-7 --dpi 200 --text-layer extract \\
-        --boxes boxes.json --fill black --markdown out.md
+        --boxes boxes.json --fill black --markdown out.md --audit audit.json
 
 ページ番号・boxes.json のキーはすべて 1-indexed(人間向け)。内部の sanitize() は
 0-indexed で扱うため、ここで変換する。
@@ -98,6 +98,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help="指定するとサニタイズ後のテキストを Markdown としても書き出す",
     )
+    parser.add_argument(
+        "--audit",
+        default=None,
+        help=(
+            "指定すると、--text-layer extract で採用したテキストのうち、同じ位置を"
+            " OCR しても検出できないものを警告として JSON に書き出す"
+            "(--text-layer extract 専用。tesseract が必要)"
+        ),
+    )
     return parser
 
 
@@ -123,6 +132,7 @@ def main(argv: list[str] | None = None) -> int:
             fill=args.fill,
             ocr_lang=args.ocr_lang,
             markdown_path=args.markdown,
+            audit_path=args.audit,
         )
     except (RuntimeError, ValueError) as e:
         print(f"エラー: {e}", file=sys.stderr)
@@ -131,6 +141,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"出力しました: {args.output}")
     if args.markdown:
         print(f"Markdown も出力しました: {args.markdown}")
+    if args.audit:
+        with open(args.audit, encoding="utf-8") as f:
+            report = json.load(f)
+        count = len(report["suspicious_items"])
+        print(f"監査レポートを出力しました: {args.audit} (疑わしいテキスト {count} 件)")
     return 0
 
 
