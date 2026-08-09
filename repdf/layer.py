@@ -18,6 +18,12 @@ _FONTNAME = "japan"
 # ぴったりにすると行間で文字が隣の行にはみ出すことがあるための余裕。
 _FONTSIZE_RATIO = 0.9
 
+# ページ画像の JPEG 品質(0-100)。
+# PNG で insert_image に渡すと PyMuPDF 1.28.2 では圧縮フィルタが付かず生ピクセルの
+# まま埋め込まれ、ファイルサイズが実測で数十倍に膨らむことを確認したため JPEG を使う
+# (A4 1ページ 200dpi で PNG 無圧縮 11.6MB → JPEG品質90で 数百KB)。
+_JPEG_QUALITY = 90
+
 
 def build_page(
     doc: pymupdf.Document,
@@ -36,7 +42,7 @@ def build_page(
     page = doc.new_page(width=page_rect.width, height=page_rect.height)
 
     buf = io.BytesIO()
-    image.save(buf, format="PNG")
+    image.save(buf, format="JPEG", quality=_JPEG_QUALITY)
     page.insert_image(page.rect, stream=buf.getvalue())
 
     for item in items:
