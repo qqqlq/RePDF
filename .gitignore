@@ -1,0 +1,28 @@
+# venv
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# 環境変数・秘密情報
+.env
+.env.*
+!.env.example
+
+# アップロードされたPDF・作業ファイル・生成物（個人データを誤ってpushしない）
+*.pdf
+!tests/**/*.pdf
+work/
+uploads/
+output/
+
+# エディタ・OS
+.vscode/
+.idea/
+.DS_Store
