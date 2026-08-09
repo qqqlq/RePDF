@@ -54,6 +54,14 @@
   box-sizing: border-box;
 }
 
+/* author スタイルシートの通常ルールは、詳細度に関わらず UA スタイルシートの
+   [hidden]{display:none} より優先されてしまう(カスケードの origin レベルの話で、
+   詳細度の問題ではない)。以降どの display 指定を書いても hidden を確実に
+   上書きできるよう、最優先で明示しておく。 */
+[hidden] {
+  display: none !important;
+}
+
 html {
   background: var(--paper);
 }
