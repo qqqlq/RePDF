@@ -34,6 +34,10 @@ source .venv/bin/activate
 OCR 方式のテキストレイヤーを使う場合は `tesseract-ocr` (と日本語なら `tesseract-ocr-jpn`) が
 別途必要。`setup.sh` が未導入を検出した場合は案内を表示する。
 
+Web UI の見た目を Chromium で確認したい場合(UI を変更したときなど)は、
+`.venv/bin/playwright install chromium` を追加で実行する(本体は別ダウンロードで
+約185MB あるため `setup.sh` では自動実行しない)。
+
 ## 使い方 (Web UI)
 
 ```sh
@@ -92,8 +96,10 @@ LAN 上の他端末から使いたい場合も、信頼できるネットワー�
 - FastAPI + バニラ JS の Web UI を追加(アップロード・ページ削除・矩形黒塗り/白塗り・
   進捗表示・ダウンロード)
 - `sanitize()` にページ単位の進捗コールバックを追加(既存呼び出しへの影響なし)
-- 実 PDF で `curl` によるバックエンド動作確認を実施。ブラウザでの実操作確認は
-  この環境にブラウザ自動操作手段がないため未実施(詳細は `docs/phase2.md`)
+- `frontend-design` スキルでビジュアルデザインを刷新
+- Playwright + Chromium を開発依存に追加し、実際にブラウザ操作で検証。
+  `hidden` 属性が CSS のカスケードにより効かず矩形編集モーダルが閉じない不具合と、
+  矩形編集で黒塗り位置がずれる不具合を発見・修正(詳細は `docs/phase2.md`)
 
 ### Phase 1 追加機能: extract/OCR差分による監査レポート
 - `--audit` オプションを追加。`--text-layer extract` が採用したテキストのうち、

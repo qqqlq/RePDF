@@ -37,3 +37,7 @@ fi
 echo
 echo "==> セットアップ完了"
 echo "    source $VENV_DIR/bin/activate で venv を有効化してください"
+echo
+echo "    Web UI の見た目を Chromium で確認したい場合は、以下も実行してください"
+echo "    (Chromium 本体は別ダウンロードで約185MBあるため、ここでは自動実行しません):"
+echo "    $VENV_DIR/bin/playwright install chromium"
