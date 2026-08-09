@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RePDF — 痕跡を残さない PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <h1 class="logotype">RePDF</h1>
+    <span class="case-stamp">SANITIZED COPY</span>
+  </div>
+  <p class="subtitle">
+    <span>ページを画像として作り直し、</span>
+    <span class="redact-phrase" tabindex="0"><span class="redact-phrase-text">見えない文字</span></span>
+    <span>とメタデータを残しません。</span>
+  </p>
+</header>
+
+<main>
+
+  <section id="upload-section">
+    <p class="eyebrow">01 — 提出</p>
+    <div id="drop-zone" tabindex="0">
+      <p class="drop-zone-title">PDF をここにドロップ</p>
+      <p class="drop-zone-sub">またはクリックしてファイルを選択</p>
+      <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+    </div>
+    <p id="upload-error" class="error" hidden></p>
+  </section>
+
+  <section id="edit-section" hidden>
+    <div class="panel">
+      <p class="eyebrow">02 — 査閲</p>
+      <h2>ページを選ぶ</h2>
+      <label>
+        除外するページ(1始まり。例: 3,5-7)
+        <input type="text" id="remove-range-input" placeholder="例: 3,5-7">
+      </label>
+      <p class="hint">サムネイルをクリックしても除外/復元できます。「矩形編集」で黒塗り・白塗りする領域を指定できます。</p>
+      <div id="thumbnails"></div>
+    </div>
+
+    <div class="panel">
+      <p class="eyebrow">03 — 条件</p>
+      <h2>作り直し方</h2>
+      <label>
+        テキストレイヤー
+        <select id="text-layer-select">
+          <option value="extract">extract — 元PDFの可視テキストを再利用</option>
+          <option value="ocr">ocr — 画像から読み直す</option>
+          <option value="none">none — 画像のみ、検索不可</option>
+        </select>
+      </label>
+      <label id="ocr-lang-label" hidden>
+        OCR言語
+        <input type="text" id="ocr-lang-input" value="eng" placeholder="例: jpn+eng">
+      </label>
+      <label>
+        塗りつぶし色
+        <select id="fill-select">
+          <option value="black">黒</option>
+          <option value="white">白</option>
+        </select>
+      </label>
+      <label>
+        ラスタライズ解像度(dpi)
+        <select id="dpi-select">
+          <option value="150">150</option>
+          <option value="200" selected>200</option>
+          <option value="300">300</option>
+        </select>
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" id="markdown-checkbox">
+        Markdown サイドカーも書き出す
+      </label>
+      <label class="checkbox">
+        <input type="checkbox" id="audit-checkbox">
+        監査レポートも書き出す(OCRで見えないテキストを警告。extract 専用)
+      </label>
+    </div>
+
+    <button id="generate-button" class="stamp-button">この内容で作り直す</button>
+    <p id="render-error" class="error" hidden></p>
+  </section>
+
+  <section id="progress-section" hidden>
+    <p class="eyebrow">処理中</p>
+    <h2>ページを作り直しています…</h2>
+    <progress id="progress-bar" max="1" value="0"></progress>
+    <p id="progress-text" class="mono"></p>
+  </section>
+
+  <section id="result-section" hidden>
+    <p class="eyebrow">04 — 完了</p>
+    <h2>痕跡は残っていません</h2>
+    <ul id="result-links"></ul>
+    <button id="restart-button" class="secondary-button">別の PDF を処理する</button>
+  </section>
+
+</main>
+
+<div id="box-editor-overlay" hidden>
+  <div id="box-editor-panel">
+    <div id="box-editor-image-container">
+      <img id="box-editor-image" alt="編集中のページ">
+      <div id="box-editor-draw-layer"></div>
+    </div>
+    <div id="box-editor-sidebar">
+      <p class="eyebrow"><span id="box-editor-page-label"></span></p>
+      <h3>黒塗り・白塗り領域</h3>
+      <p class="hint">画像上をドラッグして矩形を追加できます。</p>
+      <ul id="box-list"></ul>
+      <button id="box-editor-close-button" class="secondary-button">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

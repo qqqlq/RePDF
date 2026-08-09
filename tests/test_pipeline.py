@@ -163,6 +163,30 @@ class TestSanitize:
                 audit_path=tmp_path / "audit.json",
             )
 
+    def test_progress_callback_is_called_per_page(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        calls = []
+        sanitize(
+            input_pdf,
+            output,
+            dpi=100,
+            progress_callback=lambda done, total: calls.append((done, total)),
+        )
+        # input_pdf は3ページ、remove_pages指定なしなので3回呼ばれる
+        assert calls == [(1, 3), (2, 3), (3, 3)]
+
+    def test_progress_callback_reflects_removed_pages(self, input_pdf, tmp_path):
+        output = tmp_path / "output.pdf"
+        calls = []
+        sanitize(
+            input_pdf,
+            output,
+            remove_pages={1},
+            dpi=100,
+            progress_callback=lambda done, total: calls.append((done, total)),
+        )
+        assert calls == [(1, 2), (2, 2)]
+
 
 @pytest.mark.skipif(not tesseract_available(), reason="tesseract がインストールされていない")
 class TestAuditReport:
