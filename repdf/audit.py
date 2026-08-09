@@ -15,6 +15,11 @@ from dataclasses import dataclass
 
 from repdf.models import BBox, TextItem
 
+# 実PDFでの検証で、1文字だけの短いテキスト(数字・記号・単一アルファベット)は
+# OCR が読み落としやすく、偽陽性の大半を占めることが分かったため判定対象から外す。
+# 短い隠しテキストを見逃すリスクはあるが、ノイズだらけでは警告として機能しない。
+_MIN_TEXT_LENGTH = 2
+
 
 @dataclass(frozen=True)
 class SuspiciousItem:
@@ -41,6 +46,8 @@ def find_suspicious_items(
     """
     suspicious = []
     for item in extract_items:
+        if len(item.text.strip()) < _MIN_TEXT_LENGTH:
+            continue
         if not any(_boxes_overlap(item.bbox, ocr_item.bbox) for ocr_item in ocr_items):
             suspicious.append(
                 SuspiciousItem(text=item.text, bbox=item.bbox, reason="not_detected_by_ocr")

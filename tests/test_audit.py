@@ -34,8 +34,22 @@ def test_empty_extract_items_returns_empty():
 
 def test_empty_ocr_items_flags_all_extract_items():
     extract_items = [
-        make_item("A", (10, 10, 20, 20)),
-        make_item("B", (30, 30, 40, 40)),
+        make_item("AB", (10, 10, 20, 20)),
+        make_item("CD", (30, 30, 40, 40)),
     ]
     result = find_suspicious_items(extract_items, [])
-    assert {item.text for item in result} == {"A", "B"}
+    assert {item.text for item in result} == {"AB", "CD"}
+
+
+def test_single_character_text_is_excluded_from_audit():
+    # 1文字だけの短いテキストは OCR の読み落としが多く偽陽性の温床になるため、
+    # 位置が重ならなくても報告しない。
+    extract_items = [make_item("A", (10, 10, 20, 20))]
+    assert find_suspicious_items(extract_items, []) == []
+
+
+def test_two_character_text_is_still_audited():
+    extract_items = [make_item("AB", (10, 10, 20, 20))]
+    result = find_suspicious_items(extract_items, [])
+    assert len(result) == 1
+    assert result[0].text == "AB"
